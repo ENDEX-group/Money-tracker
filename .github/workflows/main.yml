@@ -1,4 +1,4 @@
-name: Build Android App (Kivy)
+name: Build Kivy App APK
 
 on:
   push:
@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -18,23 +18,40 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Install system dependencies
+      - name: Install base dependencies
         run: |
           sudo apt update
-          sudo apt install -y git zip unzip openjdk-17-jdk python3-pip python3-setuptools python3-wheel \
-            libffi-dev libssl-dev autoconf automake libtool pkg-config zlib1g-dev
+          sudo apt install -y zip unzip openjdk-17-jdk python3-pip python3-setuptools python3-wheel \
+            git libffi-dev libssl-dev autoconf automake libtool pkg-config zlib1g-dev wget
 
       - name: Install Buildozer & Kivy
         run: |
           pip install --upgrade pip
           pip install buildozer cython kivy
 
-      - name: Install Android SDK & AIDL
+      - name: Install Android SDK manually (fixes AIDL)
         run: |
           mkdir -p $HOME/.android/cmdline-tools
           cd $HOME/.android/cmdline-tools
           wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O tools.zip
-          unzip tools.zip -d tools
+          unzip tools.zip -d latest
+          yes | $HOME/.android/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/.android "platform-tools" "build-tools;34.0.0" "platforms;android-34"
+          
+          echo "✅ Android SDK installed successfully"
+          find $HOME/.android/build-tools -name aidl
+
+      - name: Build APK
+        run: |
+          export ANDROIDSDK=$HOME/.android
+          export ANDROIDNDK=$ANDROIDSDK/ndk-bundle
+          export PATH=$PATH:$ANDROIDSDK/platform-tools:$ANDROIDSDK/build-tools/34.0.0
+          buildozer android debug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Family-App
+          path: bin/*.apk          unzip tools.zip -d tools
           yes | tools/cmdline-tools/bin/sdkmanager --sdk_root=$HOME/.android "platform-tools" "build-tools;34.0.0" "platforms;android-34"
 
           # Verify aidl exists
