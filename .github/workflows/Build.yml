@@ -50,6 +50,22 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Family-App
+          path: bin/*.apk          unzip tools.zip -d tools
+          yes | tools/cmdline-tools/bin/sdkmanager --sdk_root=$HOME/.android "platform-tools" "build-tools;34.0.0" "platforms;android-34"
+
+          # Verify aidl exists
+          find $HOME/.android -type f -name "aidl" || echo "AIDL not found!"
+
+      - name: Build APK
+        run: |
+          export ANDROIDSDK=$HOME/.android
+          export PATH=$PATH:$ANDROIDSDK/platform-tools:$ANDROIDSDK/build-tools/34.0.0
+          buildozer android debug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Family-App
           path: bin/*.apk        run: |
           export ANDROIDSDK=$HOME/.android/sdk
           export ANDROIDNDK=$ANDROIDSDK/ndk-bundle
